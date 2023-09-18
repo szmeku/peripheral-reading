@@ -110,7 +110,7 @@ const randomName = () => {
     return Promise.resolve(trim(names[Math.floor((Math.random() * names.length))]).toLowerCase())
 }
 
-import {path, pipe, propEq, tap, trim, when} from 'ramda';
+import {head, juxt, last, path, pipe, propEq, tap, trim, when} from 'ramda';
 import {useEffect, useState} from "react";
 
 const newWord = () => {
@@ -119,20 +119,21 @@ const newWord = () => {
       .then(r => r[0])
 }
 
-const defaultText = "Stare only at the red letter E and try not to stare at the word directly and type it in. If you'll type it correctly word will move farther. Hit Enter to start"
+const defaultText = "Stare only at the red letter O and try not to stare at the word directly and type it in. If you'll type it correctly word will move farther. Hit Enter to start"
 
 export default function Home() {
 
   const [score, setScore] = useState(0);
   const [userInput, setUserInputText] = useState('');
-  const [word, setWord] = useState(defaultText);
+  const [wordLeft, setWordLeft] = useState(defaultText);
+  const [wordRight, setWordRight] = useState(defaultText);
   const [enterPressed, setEnterPressed] = useState(false);
 
   useEffect(() => {
 
-      if(enterPressed && word !== defaultText) {
+      if(enterPressed && wordRight !== defaultText) {
 
-          if (word === trim(userInput)) {
+          if ((wordLeft + ' ' +  wordRight) === trim(userInput)) {
               setScore(v => v + 1)
           } else {
               setScore(v => v - 1)
@@ -141,27 +142,42 @@ export default function Home() {
 
       if(enterPressed) {
           // newWord()
-          randomName()
+          Promise.all([randomName(), randomName() ])
               .then(pipe(
                   tap(() => setEnterPressed(false)),
                   tap(() => setUserInputText('')),
-                  setWord,
+                  juxt([
+                      pipe(head, setWordLeft),
+                      pipe(last, setWordRight)
+                  ])
               ))
       }
 
   },[enterPressed])
 
   return (
-    <main style={{marginTop: 100}}>
-        <h1 style={{fontSize: 45, marginLeft: 415}}>SCOR<span style={{color: 'red'}}>E</span>: {score}</h1>
 
-        <input type="text"
-               style={{ textAlign: 'right', fontSize: 45}}
-               value={userInput}
-               onChange={pipe(path(['target','value']), setUserInputText)}
-               onKeyUp={when(propEq('Enter', 'key'), () => setEnterPressed(true))}
-        />
-        <span style={{marginLeft: score*3, fontSize: 45}}>{word}</span>
+    <main style={{marginTop: 100, textAlign: "center"}}>
+
+        <h1 style={{fontSize: 45}}>SC<span style={{color: 'red'}}>O</span>RE</h1>
+        <h1 style={{fontSize: 45}}>{score}</h1>
+
+        <div style={{ display: "flex", flexWrap: "wrap" }}>
+            <span style={{textAlign: "right", flexBasis: "48%", paddingRight: score*3, fontSize: 45}}>{wordLeft}</span>
+
+            <span style={{ flexBasis: "4%", textAlign: 'center'}}>
+                     <input type="text"
+                            style={{textAlign: 'center', fontSize: 45, width: "100%"}}
+                            value={userInput}
+                            onChange={pipe(path(['target','value']), setUserInputText)}
+                            onKeyUp={when(propEq('Enter', 'key'), () => setEnterPressed(true))}
+                     />
+            </span>
+
+
+            <span style={{textAlign: "left", flexBasis: "48%", paddingLeft: score*3, fontSize: 45}}>{wordRight}</span>
+        </div>
+
     </main>
   )
 }
